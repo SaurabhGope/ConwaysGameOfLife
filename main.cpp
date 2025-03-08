@@ -1,94 +1,77 @@
 #include <iostream>
 #include "grid.h"
-#include "ansi_escapes.h"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include "renderer.h"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
-int main(int argc, char* argv[])
-{
-	// Initialize GLFW
-	if (!glfwInit())
-	{
-		std::cerr << "Failed to initialize GLFW!" << std::endl;
-		return -1;
-	}
-	//Printing the version of GLFW
-	std::cout << "GLFW Initialized! Version: " << glfwGetVersionString() << std::endl;
+int main() {
+    // Initialize GLFW
+    if(!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW!" << std::endl;
+        return -1;
+    }
 
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Conway's Game of Life", nullptr, nullptr);
-    if (!window)
-	{
+    // Configure GLFW
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    // Create window
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Conway's Game of Life - Cellular Automata", NULL, NULL);
+    if(!window) {
         std::cerr << "Failed to create GLFW window!" << std::endl;
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
-	
-	// Load GLAD (must be done after creating OpenGL context)
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cerr << "Failed to initialize GLAD!" << std::endl;
-		return -1;
-	}
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	
-	// GLM Test
-    glm::vec3 position(1.0f, 2.0f, 3.0f);
-    std::cout << "GLM Vector: (" << position.x << ", " << position.y << ", " << position.z << ")" << std::endl;
-	// Main render loop
-	while (!glfwWindowShouldClose(window))
-	{
-		glClear(GL_COLOR_BUFFER_BIT);
 
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
+    // Initialize GLAD
+    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD!" << std::endl;
+        return -1;
+    }
 
-	// std::cout << "Conway's Game of Life \n";
-	// std::cout << "Press the return key to display each generation\n";
+    // Initialize renderer
+    Renderer::Initialize(SCR_WIDTH, SCR_HEIGHT);
+    
+    // Set up grid
+    Grid gameGrid;
+    gameGrid.Randomize();
+    
+    // Timing variables
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+    float lastUpdate = 0.0f;
 
-	// // Wait for user
-	// std::cin.get();
+    // Main loop
+    while(!glfwWindowShouldClose(window)) {
+        // Calculate delta time
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
 
-	// // Enable ANSI escape codes on Windows
-	// SetupConsole();
+        // Input handling
+        Renderer::ProcessInput(window, deltaTime);
 
-	// // Grid for the first generation
-	// Grid currentGeneration;
+        // Update grid every 0.5 seconds
+        if(currentFrame - lastUpdate >= 0.5f) {
+			Grid nextGrid;
+			Calculate(gameGrid, nextGrid);
+			gameGrid.Update(nextGrid);
+			lastUpdate = currentFrame;
+		}
 
-	// // Populate the cells at random
-	// currentGeneration.Randomize();
+        // Render
+        Renderer::DrawGrid(gameGrid);
 
-	// while (true)
-	// {
-	// 	// Draw the current generation
-	// 	currentGeneration.Draw();
+        // Swap buffers and poll events
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
 
-	// 	// Wait for user to press the return key
-	// 	std::cin.get();
-
-	// 	// Grid for the next generation
-	// 	Grid nextGeneration;
-
-	// 	// Populate the cells in the next generation
-	// 	Calculate(currentGeneration, nextGeneration);
-
-	// 	// Update to the next generation
-	// 	currentGeneration.Update(nextGeneration);
-	// }
-
-	// // Move cursor to bottom of screen
-	// std::cout << "\x1b[" << 0 << ";" << ROW_MAX - 1 << "H";
-
-	//Terminate GLFW
-	glfwTerminate();
-	return 0;
-	// Restore console on Windows
-	// RestoreConsole();
+    // Cleanup
+    Renderer::Shutdown();
+    glfwTerminate();
+    return 0;
 }

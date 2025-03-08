@@ -29,7 +29,7 @@ add_executable(ConwaysGameOfLife
     glad.c
     grid.cpp
     cell.cpp
-    ansi_escapes.cpp
+    renderer.cpp
 )
 
 # Link GLFW and OpenGL (for Windows)

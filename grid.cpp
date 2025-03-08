@@ -2,46 +2,47 @@
 #include "grid.h"
 #include <time.h>
 
-void Grid::Create(int row, int column)
-{
-	m_Cells[row][column].Create();
-}
-void Grid::Draw()
-{
-	// Escape[2J clears the screen and returns the cursor to the "home" position
-	std::cout << "\x1b[2J";
+Grid::Grid() : m_Cells(ROW_MAX, std::vector<Cell>(COL_MAX)) {} // Initialize with proper size
 
-	for (int row = 0; row < ROW_MAX; ++row)
-	{
-		for (int column = 0; column < COL_MAX; ++column)
-		{
-			m_Cells[row][column].Draw(row, column);
-		}
-	}
+void Grid::Create(int row, int column) {
+    // Add boundary check
+    if(row >= 0 && row < ROW_MAX && column >= 0 && column < COL_MAX) {
+        m_Cells[row][column].Create();
+    }
 }
 
+const Cell& Grid::GetCell(int row, int col) const {
+    if(row >= 0 && row < ROW_MAX && col >= 0 && col < COL_MAX) {
+        return m_Cells[row][col];
+    }
+    static Cell nullCell;
+    return nullCell;
+}
 void Grid::Randomize()
 {
-	const int factor = 5;
-	const int cutOff = RAND_MAX / factor;
-	time_t now;
-	time(&now);
-	srand(now);
+    srand(static_cast<unsigned>(time(nullptr)));
+    const int factor = 5;
+    const int cutOff = RAND_MAX / factor;
 
-	for (int row = 1; row < ROW_MAX; ++row)
+    for(int row = 0; row < ROW_MAX; ++row)
 	{
-		for (int column = 1; column < COL_MAX; ++column)
+        for(int column = 0; column < COL_MAX; ++column)
 		{
-			if (rand()/cutOff == 0)
+            if(rand()/cutOff == 0)
 			{
-				Create(row, column);
-			}
-		}
-	}
+                Create(row, column);
+            }
+        }
+    }
 }
 
-bool Grid::WillSurvive(int row, int column)
+bool Grid::WillSurvive(int row, int column) const
 {
+	if(row <= 0 || row >= ROW_MAX-1 || column <= 0 || column >= COL_MAX-1) 
+	{
+		return false;
+	}
+
 	if (!m_Cells[row][column].IsAlive())
 	{
 		return false;
@@ -70,8 +71,12 @@ bool Grid::WillSurvive(int row, int column)
 	return true;
 }
 
-bool Grid::WillCreate(int row, int column)
+bool Grid::WillCreate(int row, int column) const
 {
+	if(row <= 0 || row >= ROW_MAX-1 || column <= 0 || column >= COL_MAX-1) 
+	{
+		return false;
+	}
 	if (m_Cells[row][column].IsAlive())
 	{
 		return false;
@@ -99,22 +104,22 @@ bool Grid::WillCreate(int row, int column)
 	return true;
 }
 
-void Grid::Update(const Grid& next)
-{
-	for (int row = 1; row < ROW_MAX; ++row)
-	{
-		for (int column = 1; column < COL_MAX; ++column)
-		{
-			m_Cells[row][column] = next.m_Cells[row][column];
-		}
-	}
+void Grid::Update(const Grid& next) {
+    for(int row = 0; row < ROW_MAX; row++) {  // Full range
+        for(int column = 0; column < COL_MAX; column++) {
+            if(row < next.m_Cells.size() && column < next.m_Cells[row].size()) {
+                m_Cells[row][column] = next.m_Cells[row][column];
+            }
+        }
+    }
 }
 
-void Calculate(Grid& oldGeneration, Grid& newGeneration)
+void Calculate(const Grid& oldGeneration, Grid& newGeneration)
 {
-	for (int row = 1; row < ROW_MAX; ++row)
+	newGeneration = Grid();
+	for (int row = 0; row < ROW_MAX; ++row)
 	{
-		for (int column = 1; column < COL_MAX; ++column)
+		for (int column = 0; column < COL_MAX; ++column)
 		{
 			// will this live cell survive to next generation?
 			if (oldGeneration.WillSurvive(row, column))
