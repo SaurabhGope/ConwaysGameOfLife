@@ -1,7 +1,26 @@
-# Ignore Visual Studio files
-*.vcxproj
-*.vcxproj.*
+# Ignore build directories
+build/
+CMakeFiles/
+CMakeCache.txt
+*.vcxproj*
 *.sln
+*.user
+*.exe
+
+# Ignore system files
+*.DS_Store
+Thumbs.db
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Ignore third-party libraries (optional if you clone them separately)
+# third_party/
+# !third_party/glad
+# !third_party/glm
+# !third_party/glfw
 
 # Ignore debug folder
 debug/
