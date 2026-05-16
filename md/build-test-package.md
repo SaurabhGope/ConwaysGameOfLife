@@ -58,16 +58,24 @@ Last known result:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1
 ```
 
-Last known package output:
+The package script builds and packages both default configurations:
 
 ```text
-build\Life3D-0.1.0-windows-x64.zip
+build\Life3D-0.1.0-windows-x64-Debug.zip
+build\Life3D-0.1.0-windows-x64-Release.zip
 ```
 
-Last known package size:
+Last known package sizes:
 
 ```text
-548914 bytes
+Debug: 720395 bytes
+Release: 389076 bytes
+```
+
+To package one configuration:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -Config Release
 ```
 
 ## Sandbox Note

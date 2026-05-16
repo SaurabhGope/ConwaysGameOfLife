@@ -28,12 +28,18 @@ else()
     message(STATUS "Vulkan SDK not found. Vulkan backend will remain unavailable in this build.")
 endif()
 
+add_library(life3d_logging
+    src/core/Logger.cpp
+)
+life3d_configure_target(life3d_logging)
+
 add_library(life3d_sim
     src/sim/RuleSet.cpp
     src/sim/Grid3D.cpp
     src/sim/SimulationEngine.cpp
 )
 life3d_configure_target(life3d_sim)
+target_link_libraries(life3d_sim PUBLIC life3d_logging)
 
 add_library(life3d_seed
     src/seed/SeedEngine.cpp
@@ -47,7 +53,7 @@ add_library(life3d_render
     src/render/opengl/OpenGLShaders.cpp
 )
 life3d_configure_target(life3d_render)
-target_link_libraries(life3d_render PUBLIC glfw OpenGL::GL)
+target_link_libraries(life3d_render PUBLIC life3d_logging glfw OpenGL::GL)
 if(Vulkan_FOUND)
     target_compile_definitions(life3d_render PUBLIC LIFE3D_HAS_VULKAN=1)
     target_link_libraries(life3d_render PUBLIC Vulkan::Vulkan)
@@ -69,6 +75,7 @@ add_library(life3d_core
 life3d_configure_target(life3d_core)
 target_link_libraries(life3d_core
     PUBLIC
+        life3d_logging
         life3d_sim
         life3d_seed
         life3d_render

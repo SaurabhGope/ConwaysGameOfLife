@@ -11,6 +11,7 @@ Life3D Engine is a from-scratch 3D cellular automata simulation project focused 
 - Built-in cube, sphere, line, and deterministic noise seed generators
 - Renderer factory with OpenGL as the active compatibility backend and explicit staged backends for Vulkan, D3D12, Metal, and WebGPU
 - Shader asset layout for OpenGL and staged Vulkan compute work
+- Thread-safe structured logger with console/file sinks, source locations, categories, and `LIFE3D_LOG_LEVEL` / `LIFE3D_LOG_DIR` overrides
 - Dependency bootstrap for GLFW, GLM, and ImGui
 - CTest-integrated smoke coverage for rules, weighted simulation, toroidal boundaries, seeds, and backend factory behavior
 - CPack ZIP packaging for a portable Windows x64 build
@@ -24,7 +25,19 @@ Life3D Engine is a from-scratch 3D cellular automata simulation project focused 
 ./scripts/package.ps1
 ```
 
-The packaged build is emitted as `build/Life3D-0.1.0-windows-x64.zip`.
+The package script emits both:
+
+- `build/Life3D-0.1.0-windows-x64-Debug.zip`
+- `build/Life3D-0.1.0-windows-x64-Release.zip`
+
+## Logging
+
+Runtime logs are written to `logs/` by default and mirrored to the console. Use these environment variables to tune logging:
+
+```powershell
+$env:LIFE3D_LOG_LEVEL = "debug" # trace, debug, info, warn, error, critical, off
+$env:LIFE3D_LOG_DIR = "D:\Life3DLogs"
+```
 
 ## Backend roadmap
 

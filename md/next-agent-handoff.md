@@ -18,6 +18,7 @@ The requested development plan was implemented as a first staged, buildable pass
 - Vulkan/D3D12/etc. represented as planned unavailable backends
 - seed generators added
 - CPack ZIP packaging added
+- stateful structured logger added and integrated
 - smoke tests expanded
 - README updated
 
@@ -29,6 +30,7 @@ The requested development plan was implemented as a first staged, buildable pass
 - Shader files exist, are copied/packaged, but are not yet loaded by the OpenGL renderer.
 - GPU simulation buffers and compute dispatch are not implemented yet.
 - UI is functional but utilitarian; no docking/layout persistence or advanced editor UX yet.
+- Logger is thread-safe and structured, but currently synchronous. If simulation/render threads are split later, consider adding a bounded async queue and backpressure policy.
 
 ## Recommended Next Stage
 

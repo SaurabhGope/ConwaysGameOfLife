@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <utility>
+#include "core/Logger.hpp"
 
 SimulationEngine::SimulationEngine(Grid3D initialGrid, RuleSet rules)
     : SimulationEngine(std::move(initialGrid), WeightedRuleSet::FromRuleSet(rules))
@@ -15,6 +16,13 @@ SimulationEngine::SimulationEngine(Grid3D initialGrid, WeightedRuleSet rules)
     , m_rules(rules)
 {
     m_stats.aliveCells = m_current.AliveCount();
+    LIFE3D_LOG_DEBUG(
+        "simulation",
+        "Simulation created. dims={}x{}x{} alive={}",
+        m_current.Dims().x,
+        m_current.Dims().y,
+        m_current.Dims().z,
+        m_stats.aliveCells);
 }
 
 void SimulationEngine::Step(uint32_t iterations)
@@ -49,6 +57,13 @@ void SimulationEngine::Step(uint32_t iterations)
     const auto end = clock::now();
     m_stats.aliveCells = m_current.AliveCount();
     m_stats.lastStepMs = std::chrono::duration<double, std::milli>(end - start).count();
+    LIFE3D_LOG_TRACE(
+        "simulation",
+        "Simulation stepped. iterations={} generation={} alive={} step_ms={:.3f}",
+        iterations,
+        m_stats.generation,
+        m_stats.aliveCells,
+        m_stats.lastStepMs);
 }
 
 void SimulationEngine::Reset(Grid3D newInitialGrid)
@@ -57,11 +72,13 @@ void SimulationEngine::Reset(Grid3D newInitialGrid)
     m_next = Grid3D(m_current.Dims());
     m_stats = {};
     m_stats.aliveCells = m_current.AliveCount();
+    LIFE3D_LOG_INFO("simulation", "Simulation engine reset. alive={}", m_stats.aliveCells);
 }
 
 void SimulationEngine::SetRules(WeightedRuleSet rules)
 {
     m_rules = rules;
+    LIFE3D_LOG_DEBUG("simulation", "Simulation rules replaced.");
 }
 
 const Grid3D& SimulationEngine::Current() const

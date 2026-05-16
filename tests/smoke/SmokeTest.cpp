@@ -1,5 +1,7 @@
 #include <memory>
+#include <string_view>
 
+#include "core/Logger.hpp"
 #include "render/IRenderer.hpp"
 #include "seed/SeedEngine.hpp"
 #include "sim/Grid3D.hpp"
@@ -16,6 +18,18 @@ bool Require(bool condition)
 
 int main()
 {
+    LoggerConfig loggerConfig{};
+    loggerConfig.consoleEnabled = false;
+    loggerConfig.fileEnabled = false;
+    loggerConfig.minimumLevel = LogLevel::Trace;
+    Logger::Instance().Initialize(loggerConfig);
+    LIFE3D_LOG_INFO("test", "Smoke test logger initialized.");
+
+    if (!Require(LogLevelFromString("warning") == LogLevel::Warn && LogLevelName(LogLevel::Critical) == std::string_view("CRITICAL")))
+    {
+        return 10;
+    }
+
     const RuleSet rules = RuleSet::FromString("B5/S456", BoundaryMode::FixedDead);
 
     if (!Require(rules.birth[5] && rules.survive[4] && rules.survive[5] && rules.survive[6]))
@@ -90,5 +104,6 @@ int main()
         return 9;
     }
 
+    Logger::Instance().Shutdown();
     return 0;
 }

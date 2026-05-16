@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include "core/Logger.hpp"
 #include <GLFW/glfw3.h>
 
 bool OpenGLRenderer::Initialize(const RendererInitInfo&)
@@ -13,6 +14,7 @@ bool OpenGLRenderer::Initialize(const RendererInitInfo&)
     m_stats.statusMessage = "Compatibility rendering backend active. GPU simulation backends are staged next.";
     m_stats.available = true;
     glEnable(GL_DEPTH_TEST);
+    LIFE3D_LOG_INFO("render.opengl", "OpenGL compatibility backend initialized.");
     return true;
 }
 
@@ -20,6 +22,7 @@ void OpenGLRenderer::UploadAliveCells(std::span<const uint32_t> aliveLinearIndic
 {
     m_stats.renderedCells = aliveLinearIndices.size();
     m_stats.bufferCapacity = std::max<uint64_t>(m_stats.bufferCapacity, aliveLinearIndices.size());
+    LIFE3D_LOG_TRACE("render.opengl", "Uploaded {} alive cell indices.", aliveLinearIndices.size());
 }
 
 void OpenGLRenderer::RenderFrame(const RendererFrameInput& input)
@@ -67,6 +70,7 @@ RendererStats OpenGLRenderer::Stats() const
 bool OpenGLRenderer::ReloadShaders()
 {
     m_stats.statusMessage = "OpenGL shader reload requested; fixed-function compatibility path is active.";
+    LIFE3D_LOG_INFO("render.opengl", "Shader reload requested on OpenGL compatibility path.");
     return true;
 }
 
@@ -74,4 +78,5 @@ void OpenGLRenderer::Shutdown()
 {
     m_initialized = false;
     m_stats.available = false;
+    LIFE3D_LOG_INFO("render.opengl", "OpenGL compatibility backend shutdown.");
 }

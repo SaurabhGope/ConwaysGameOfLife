@@ -5,6 +5,7 @@
 #include <memory>
 #include <random>
 #include <utility>
+#include "core/Logger.hpp"
 #include <glm/geometric.hpp>
 
 namespace
@@ -110,12 +111,14 @@ SeedEngine::SeedEngine()
     Register(std::make_unique<SphereSeedGenerator>());
     Register(std::make_unique<LineSeedGenerator>());
     Register(std::make_unique<NoiseSeedGenerator>());
+    LIFE3D_LOG_DEBUG("seed", "Default seed generators registered.");
 }
 
 void SeedEngine::Register(std::unique_ptr<ISeedGenerator> generator)
 {
     if (generator != nullptr)
     {
+        LIFE3D_LOG_TRACE("seed", "Registering seed generator {}.", static_cast<int>(generator->Type()));
         m_generators.push_back(std::move(generator));
     }
 }
@@ -130,6 +133,7 @@ std::optional<SeedMask> SeedEngine::Preview(const SeedRequest& request) const
         }
     }
 
+    LIFE3D_LOG_WARN("seed", "No seed generator registered for type {}.", static_cast<int>(request.type));
     return std::nullopt;
 }
 
@@ -138,6 +142,7 @@ bool SeedEngine::Apply(const SeedRequest& request, Grid3D& grid) const
     const auto mask = Preview(request);
     if (!mask.has_value())
     {
+        LIFE3D_LOG_WARN("seed", "Seed apply failed because preview returned no mask.");
         return false;
     }
 
@@ -180,5 +185,13 @@ bool SeedEngine::Apply(const SeedRequest& request, Grid3D& grid) const
             }
         }
     }
+    LIFE3D_LOG_DEBUG(
+        "seed",
+        "Seed applied. type={} mask={}x{}x{} grid_alive={}",
+        static_cast<int>(request.type),
+        seedMask.dims.x,
+        seedMask.dims.y,
+        seedMask.dims.z,
+        grid.AliveCount());
     return true;
 }

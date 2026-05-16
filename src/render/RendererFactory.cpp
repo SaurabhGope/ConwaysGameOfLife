@@ -1,6 +1,7 @@
 #include "render/IRenderer.hpp"
 
 #include <utility>
+#include "core/Logger.hpp"
 #include "render/opengl/OpenGLRenderer.hpp"
 
 namespace
@@ -18,7 +19,11 @@ public:
             " is planned for the GPU-scale roadmap but is not implemented in this build.";
     }
 
-    bool Initialize(const RendererInitInfo&) override { return false; }
+    bool Initialize(const RendererInitInfo&) override
+    {
+        LIFE3D_LOG_WARN("render", "{} backend requested but is unavailable in this build.", GraphicsApiName(m_api));
+        return false;
+    }
     void UploadAliveCells(std::span<const uint32_t>, glm::uvec3) override {}
     void RenderFrame(const RendererFrameInput&) override {}
     void Resize(uint32_t, uint32_t) override {}

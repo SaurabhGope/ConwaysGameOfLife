@@ -17,6 +17,28 @@ Runtime owner:
 - draws ImGui controls and applies emitted `UiActions`
 - handles backend switch requests and OpenGL fallback
 
+## Logging
+
+Core files:
+
+- `include/core/Logger.hpp`
+- `src/core/Logger.cpp`
+
+`life3d_logging` is a dependency-free logging target linked by the major runtime modules. It provides:
+
+- thread-safe writes
+- console and file sinks
+- timestamped lines with level, category, thread id, and source location
+- compile-time checked formatting through `std::format_string`
+- convenience macros: `LIFE3D_LOG_TRACE`, `LIFE3D_LOG_DEBUG`, `LIFE3D_LOG_INFO`, `LIFE3D_LOG_WARN`, `LIFE3D_LOG_ERROR`, `LIFE3D_LOG_CRITICAL`
+- env overrides: `LIFE3D_LOG_LEVEL`, `LIFE3D_LOG_DIR`
+
+Default runtime behavior:
+
+- Debug builds default to `Debug` level.
+- Release builds default to `Info` level.
+- Logs write under `logs/` unless overridden.
+
 ## Configuration
 
 Defined in `include/core/AppConfig.hpp`.

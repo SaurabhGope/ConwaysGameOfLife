@@ -1,13 +1,23 @@
 param(
     [string]$BuildDir = "build",
-    [string]$Config = "Debug"
+    [string[]]$Config = @("Debug", "Release")
 )
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $BuildPath = Join-Path $ProjectRoot $BuildDir
 
-cmake --build $BuildPath --config $Config --target package
-if (!$?)
+foreach ($CurrentConfig in $Config)
 {
-    exit $LASTEXITCODE
+    cmake --build $BuildPath --config $CurrentConfig
+    if (!$?)
+    {
+        exit $LASTEXITCODE
+    }
+
+    $PackageName = "Life3D-0.1.0-windows-x64-$CurrentConfig"
+    cpack --config (Join-Path $BuildPath "CPackConfig.cmake") -C $CurrentConfig -G ZIP -B $BuildPath -D "CPACK_PACKAGE_FILE_NAME=$PackageName"
+    if (!$?)
+    {
+        exit $LASTEXITCODE
+    }
 }

@@ -12,6 +12,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include "camera/Camera.hpp"
+#include "core/Logger.hpp"
 #include "platform/Window.hpp"
 #include "render/IRenderer.hpp"
 #include "seed/SeedEngine.hpp"
@@ -37,6 +38,17 @@ Grid3D CreateInitialGrid(glm::uvec3 dims, SeedEngine& seedEngine)
         static_cast<int32_t>(dims.z / 2u - request.transform.size.z / 2u)};
     request.transform.density = 0.14f;
     seedEngine.Apply(request, grid);
+    LIFE3D_LOG_INFO(
+        "simulation",
+        "Initial grid seeded. dims={}x{}x{} seed_size={}x{}x{} density={:.2f} alive={}",
+        dims.x,
+        dims.y,
+        dims.z,
+        request.transform.size.x,
+        request.transform.size.y,
+        request.transform.size.z,
+        request.transform.density,
+        grid.AliveCount());
     return grid;
 }
 
@@ -50,17 +62,24 @@ std::unique_ptr<IRenderer> CreateInitializedRenderer(AppConfig& config, Window& 
     auto renderer = CreateRenderer(config.render.api);
     if (renderer->Initialize(init))
     {
+        LIFE3D_LOG_INFO("render", "Renderer initialized with requested API {}.", GraphicsApiName(config.render.api));
         return renderer;
     }
 
+    LIFE3D_LOG_WARN(
+        "render",
+        "Requested renderer {} is unavailable. Falling back to OpenGL.",
+        GraphicsApiName(config.render.api));
     config.render.api = GraphicsApi::OpenGL;
     init.requestedApi = config.render.api;
     renderer = CreateRenderer(config.render.api);
     if (renderer->Initialize(init))
     {
+        LIFE3D_LOG_INFO("render", "Fallback renderer initialized with API {}.", GraphicsApiName(config.render.api));
         return renderer;
     }
 
+    LIFE3D_LOG_CRITICAL("render", "Failed to initialize fallback OpenGL renderer.");
     return nullptr;
 }
 }
@@ -74,8 +93,11 @@ int Application::Run()
 {
     if (!glfwInit())
     {
+        LIFE3D_LOG_CRITICAL("platform", "glfwInit failed.");
         return EXIT_FAILURE;
     }
+
+    LIFE3D_LOG_INFO("platform", "GLFW initialized.");
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -84,18 +106,21 @@ int Application::Run()
     Window window;
     if (!window.Create(1280, 720, "Life3D GPU Cellular Automata"))
     {
+        LIFE3D_LOG_CRITICAL("platform", "Window creation failed.");
         glfwTerminate();
         return EXIT_FAILURE;
     }
 
     window.MakeContextCurrent();
     glfwSwapInterval(1);
+    LIFE3D_LOG_INFO("platform", "Window and OpenGL context created.");
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(window.NativeHandle()), true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    LIFE3D_LOG_INFO("ui", "ImGui initialized.");
 
     SeedEngine seedEngine;
     WeightedRuleSet rules = WeightedRuleSet::FromConfig(m_config.simulation, m_config.grid.boundary);
@@ -163,21 +188,25 @@ int Application::Run()
         if (actions.togglePause)
         {
             m_config.simulation.paused = !m_config.simulation.paused;
+            LIFE3D_LOG_INFO("simulation", "Simulation {}.", m_config.simulation.paused ? "paused" : "running");
         }
 
         if (actions.singleStep)
         {
             simulation->Step();
+            LIFE3D_LOG_DEBUG("simulation", "Single step requested. generation={}", simulation->Stats().generation);
         }
 
         if (actions.setStepsPerSecond != 0u)
         {
             m_config.simulation.stepsPerSecond = actions.setStepsPerSecond;
+            LIFE3D_LOG_INFO("simulation", "Steps per second set to {}.", m_config.simulation.stepsPerSecond);
         }
 
         if (actions.switchRenderMode.has_value())
         {
             m_config.render.mode = actions.switchRenderMode.value();
+            LIFE3D_LOG_INFO("render", "Render mode changed to {}.", static_cast<int>(m_config.render.mode));
         }
 
         if (actions.switchBoundaryMode.has_value())
@@ -185,6 +214,7 @@ int Application::Run()
             m_config.grid.boundary = actions.switchBoundaryMode.value();
             rules.boundary = m_config.grid.boundary;
             simulation->SetRules(rules);
+            LIFE3D_LOG_INFO("simulation", "Boundary mode changed to {}.", static_cast<int>(m_config.grid.boundary));
         }
 
         if (actions.updateRules.has_value())
@@ -192,15 +222,24 @@ int Application::Run()
             rules = actions.updateRules.value();
             rules.boundary = m_config.grid.boundary;
             simulation->SetRules(rules);
+            LIFE3D_LOG_DEBUG(
+                "simulation",
+                "Weighted rules updated. birth=[{:.2f}, {:.2f}] survive=[{:.2f}, {:.2f}]",
+                rules.birth.min,
+                rules.birth.max,
+                rules.survive.min,
+                rules.survive.max);
         }
 
         if (actions.reloadShaders)
         {
-            renderer->ReloadShaders();
+            const bool reloaded = renderer->ReloadShaders();
+            LIFE3D_LOG_INFO("render", "Shader reload {}.", reloaded ? "succeeded" : "failed");
         }
 
         if (actions.switchApi.has_value())
         {
+            LIFE3D_LOG_INFO("render", "Switching renderer to {}.", GraphicsApiName(actions.switchApi.value()));
             renderer->Shutdown();
             m_config.render.api = actions.switchApi.value();
             renderer = CreateInitializedRenderer(m_config, window);
@@ -213,12 +252,19 @@ int Application::Run()
         if (actions.resetSimulation)
         {
             simulation->Reset(CreateInitialGrid(m_config.grid.dims, seedEngine));
+            LIFE3D_LOG_INFO("simulation", "Simulation reset.");
         }
 
         if (actions.resizeGrid.has_value())
         {
             m_config.grid.dims = actions.resizeGrid.value();
             simulation = std::make_unique<SimulationEngine>(CreateInitialGrid(m_config.grid.dims, seedEngine), rules);
+            LIFE3D_LOG_INFO(
+                "simulation",
+                "Grid resized to {}x{}x{}.",
+                m_config.grid.dims.x,
+                m_config.grid.dims.y,
+                m_config.grid.dims.z);
         }
 
         if (actions.injectSeed.has_value())
@@ -226,14 +272,17 @@ int Application::Run()
             Grid3D edited = simulation->Current();
             seedEngine.Apply(actions.injectSeed.value(), edited);
             simulation->Reset(std::move(edited));
+            LIFE3D_LOG_INFO("simulation", "Seed injected. alive={}", simulation->Stats().aliveCells);
         }
     }
 
+    LIFE3D_LOG_INFO("app", "Application shutdown started.");
     renderer->Shutdown();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
     window.Destroy();
     glfwTerminate();
+    LIFE3D_LOG_INFO("app", "Application shutdown complete.");
     return EXIT_SUCCESS;
 }
